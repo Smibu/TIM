@@ -13,6 +13,7 @@ class Arguments:
     target: str
     down: bool
     up: bool
+    coverage: bool
 
 
 BROWSER_TEST_SCRIPT = """
@@ -69,12 +70,17 @@ def run(args: Arguments) -> None:
     else:
         test_parameters = ["discover", "-v", f"tests/{args.target}", "test_*.py", "."]
 
-    test_command = ["python3", "-m", "unittest", *test_parameters]
+    test_command = ["-m", "unittest", *test_parameters]
 
     # Browser tests can be flaky (in part of lackluster flask support for Selenium, in part of the tests).
     # It's better to retry it a few times
     if args.target == "browser":
-        test_command = ["python3", "-c", BROWSER_TEST_SCRIPT]
+        test_command = ["-c", BROWSER_TEST_SCRIPT]
+
+    if args.coverage:
+        test_command = ["python3", "-m", "coverage", "run", *test_command]
+    else:
+        test_command = ["python3", *test_command]
 
     test_command_joined = sh_join(test_command)
     log_debug(f"test_command: {test_command_joined}")
@@ -104,6 +110,11 @@ def init(parser: ArgumentParser) -> None:
         help="Don't stop the all containers after the tests have finished.",
         action="store_false",
         dest="down",
+    )
+    parser.add_argument(
+        "--coverage",
+        help="Run tests with coverage. This will generate a coverage report in the coverage directory.",
+        action="store_true",
     )
     parser.add_argument(
         "target",

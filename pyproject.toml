@@ -70,6 +70,7 @@ voikko = "^0.5"
 Wand = "^0.6.7"
 requests = "^2.27.1"
 six = "^1.16.0"
+coverage = "^6.4.3"
 
 [tool.poetry.group.dev.dependencies]
 mypy = "^0.971"
