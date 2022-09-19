@@ -276,7 +276,7 @@ def pluginupload_file(doc_id: int, task_id: str):
     return json_response(returninfo)
 
 
-def _downsample_image_canvas(img_path: Path) -> None:
+def _downsample_image_canvas(img_path: Path) -> [Path]:
     """
     Downsamples an image to fit into JS canvas area.
 
@@ -288,9 +288,31 @@ def _downsample_image_canvas(img_path: Path) -> None:
     :param img: Path to image file
     """
     with Image.open(img_path) as img:
-        img.thumbnail((2048, 2048))  # TODO: max dimensions from markup
         img = PIL.ImageOps.exif_transpose(img)
-        img.save(img_path)
+        width, height = img.size
+        if height < 2048:
+            img.thumbnail((2048, 2048))  # TODO: max dimensions from markup
+            img.save(img_path)
+            return [img_path]
+        orig_suffix = img_path.suffix
+        paths = []
+        y_index = 0
+        print("init size", img.size)
+        index = 1
+        while height > 0:
+            part = img.crop((0, y_index, width, y_index + min(2048, height)))
+            part.thumbnail((2048, 2048))
+            path = img_path.parent / (img_path.stem + f"_part-{index}{orig_suffix}")
+            part.save(path)
+            paths.append(path)
+            height -= 2048
+            y_index += 2048
+            index += 1
+            print("part size", part.size)
+            print("y_index", y_index)
+            print("height", height)
+            print(img_path)
+        return paths
 
 
 def convert_pdf_or_compress_image(f: UploadedFile, u: User, d: DocInfo, task_id: str):
@@ -298,18 +320,38 @@ def convert_pdf_or_compress_image(f: UploadedFile, u: User, d: DocInfo, task_id:
     returninfo = []
     if f.content_mimetype.startswith("image/"):
         try:
-            _downsample_image_canvas(p)
+            parts = _downsample_image_canvas(p)
         except PIL.UnidentifiedImageError:
             raise RouteException(
                 f"Unable to process image {f.filename}, image may be corrupt"
             )
-        returninfo.append(
-            {
-                "file": (Path("/uploads") / f.relative_filesystem_path).as_posix(),
-                "type": f.content_mimetype,
-                "block": f.id,
-            }
-        )
+        if len(parts) == 1:
+            returninfo.append(
+                {
+                    "file": (Path("/uploads") / f.relative_filesystem_path).as_posix(),
+                    "type": f.content_mimetype,
+                    "block": f.id,
+                }
+            )
+        else:
+            for part in parts:
+                uf = UploadedFile.save_new(
+                    part.name,
+                    BlockType.Upload,
+                    original_file=part,
+                    upload_info=PluginUploadInfo(task_id_name=task_id, user=u, doc=d),
+                )
+                uf.block.set_owner(u.get_personal_group())
+                grant_access_to_session_users(uf)
+                returninfo.append(
+                    {
+                        "file": (
+                            Path("/uploads") / uf.relative_filesystem_path
+                        ).as_posix(),
+                        "type": f.content_mimetype,
+                        "block": f.id,
+                    }
+                )
     elif f.is_content_pdf:
         tempfolder = p.parent / "temp"
         tempfolder.mkdir()
@@ -330,26 +372,29 @@ def convert_pdf_or_compress_image(f: UploadedFile, u: User, d: DocInfo, task_id:
             try:
                 # TODO: Some pdfs have only one, very large page. Downsampling them to 2048px can make
                 #   them unreadable, and should in some cases be split into smaller images instead
-                _downsample_image_canvas(file)
+                parts = _downsample_image_canvas(file)
             except PIL.UnidentifiedImageError:
                 raise RouteException(
                     f"Unable to process pdf {f.filename}, some pages may be corrupt"
                 )
-            uf = UploadedFile.save_new(
-                imagepath,
-                BlockType.Upload,
-                original_file=file,
-                upload_info=PluginUploadInfo(task_id_name=task_id, user=u, doc=d),
-            )
-            uf.block.set_owner(u.get_personal_group())
-            grant_access_to_session_users(uf)
-            returninfo.append(
-                {
-                    "file": (Path("/uploads") / uf.relative_filesystem_path).as_posix(),
-                    "type": uf.content_mimetype,
-                    "block": uf.id,
-                }
-            )
+            for part in parts:
+                uf = UploadedFile.save_new(
+                    part.name,
+                    BlockType.Upload,
+                    original_file=part,
+                    upload_info=PluginUploadInfo(task_id_name=task_id, user=u, doc=d),
+                )
+                uf.block.set_owner(u.get_personal_group())
+                grant_access_to_session_users(uf)
+                returninfo.append(
+                    {
+                        "file": (
+                            Path("/uploads") / uf.relative_filesystem_path
+                        ).as_posix(),
+                        "type": uf.content_mimetype,
+                        "block": uf.id,
+                    }
+                )
         tempfolder.rmdir()
     else:
         raise RouteException("Upload needs to be an image or a pdf file")
