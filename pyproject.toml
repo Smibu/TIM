@@ -88,7 +88,7 @@ bcrypt = "^3.2.2"
 Flask = "<2.2.0"
 Authlib = "1.0.0rc1"
 langcodes = "^3.3.0"
-black = "^22.6.0"
+black = { extras = ["d"], version = "^22.6.0" }
 types-pysaml2 = "^1.0.0"
 
 [build-system]
