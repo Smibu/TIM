@@ -3,6 +3,7 @@
  */
 import * as t from "io-ts";
 import type {ApplicationRef, DoBootstrap} from "@angular/core";
+import {ViewChild} from "@angular/core";
 import {Component, ElementRef, NgModule, NgZone} from "@angular/core";
 import type {
     ISetAnswerResult,
@@ -28,6 +29,7 @@ import {TimUtilityModule} from "tim/ui/tim-utility.module";
 import {PurifyModule} from "tim/util/purify.module";
 import {registerPlugin} from "tim/plugin/pluginRegistry";
 import {CommonModule} from "@angular/common";
+import {ParCompiler} from "tim/editor/parCompiler";
 
 const TextfieldMarkup = t.intersection([
     t.partial({
@@ -88,11 +90,13 @@ export type TFieldContent = t.TypeOf<typeof FieldContent>;
      <label><span>
       <span *ngIf="inputstem" class="inputstem" [innerHtml]="inputstem | purify"></span>
         <span *ngIf="!isPlainText() && !isDownloadButton" >
+            <span style="position:relative;">
         <input type="text"
+               [style.visibility]="hide ? 'hidden' : 'visible'"
                *ngIf="!isTextArea()"
                class="form-control"
                [(ngModel)]="userword"
-               (blur)="autoSave()"
+               (blur)="lostFocus()"
                (keydown.enter)="saveAndRefocus()"
                (ngModelChange)="updateInput()"
                [ngModelOptions]="{standalone: true}"
@@ -106,7 +110,9 @@ export type TFieldContent = t.TypeOf<typeof FieldContent>;
                [class.alertFrame]="redAlert"
                [ngStyle]="styles"
                [style.width.em]="cols"
-               >
+        >
+                    <span #math class="math" [style.visibility]="hide ? 'visible' : 'hidden'" style="position: absolute; left: 0px; right: 0px; border-style:solid" (click)="startinput()" [innerHtml]="userword | purify"></span>
+</span>
        <textarea
                [rows]="rows"
                *ngIf="isTextArea()"
@@ -164,6 +170,7 @@ export class TextfieldPluginComponent
     private result?: string;
     isRunning = false;
     userword = "";
+    wordcopy = "";
     userWordBlobUrlStore?: {word: string; blobUrl: string};
     private vctrl!: ViewCtrl;
     private initialValue = "";
@@ -178,6 +185,8 @@ export class TextfieldPluginComponent
     styles: Record<string, string> = {};
     private saveCalledExternally = false;
     saveFailed = false;
+    hide = true;
+    @ViewChild("math") mathSpan!: ElementRef<HTMLDivElement>;
 
     constructor(
         el: ElementRef<HTMLElement>,
@@ -224,6 +233,14 @@ export class TextfieldPluginComponent
         return this.markup.inputplaceholder ?? "";
     }
 
+    startinput() {
+        this.hide = false;
+    }
+
+    endinput() {
+        this.hide = true;
+    }
+
     getDefaultMarkup() {
         return {};
     }
@@ -248,6 +265,7 @@ export class TextfieldPluginComponent
 
     ngOnInit() {
         super.ngOnInit();
+        console.log(this.inputstem);
         this.vctrl = vctrlInstance!;
         this.userword = valueOr(
             this.attrsall.state?.c,
@@ -361,6 +379,10 @@ export class TextfieldPluginComponent
      */
     get inputstem() {
         return this.markup.inputstem ?? "";
+    }
+
+    get wordcopyc() {
+        return this.wordcopy;
     }
 
     /**
@@ -497,6 +519,11 @@ export class TextfieldPluginComponent
         return !this.markup.nosave && this.changes;
     }
 
+    lostFocus() {
+        this.endinput();
+        this.autoSave();
+    }
+
     /**
      * Autosaver used by ng-blur in textfieldApp component.
      * Needed to seperate from other save methods because of the if-structure.
@@ -593,7 +620,30 @@ export class TextfieldPluginComponent
             this.redAlert = true;
             this.saveFailed = true;
         }
+        // console.log(this.element.find("input .formcontrol"));
+        // ParCompiler.processAllMath(this.element.find("input .form-control"));
+        // console.log(this.element.find(".math"));
+        // ParCompiler.processAllMath(this.element.find(".math"));
+        this.doMath();
         return this.saveResponse;
+    }
+
+    wc() {
+        this.wordcopy = this.userword;
+        // this.wordcopy = "\\(x^2\\)";
+        console.log("wordcopy", this.wordcopy);
+    }
+
+    pr() {
+        ParCompiler.processAllMathDelayed($(this.mathSpan.nativeElement));
+    }
+
+    doMath() {
+        ParCompiler.processAllMathDelayed($(this.mathSpan.nativeElement));
+    }
+
+    ngAfterViewChecked() {
+        // ParCompiler.processAllMathDelayed($(this.mathSpan.nativeElement));
     }
 
     getAttributeType() {

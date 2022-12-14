@@ -155,6 +155,7 @@ export class ParagraphCompiler {
         if (mathelems.length === 0) {
             return;
         }
+        console.log("processing", mathelems);
         timLogTime("processAllMath start", "view");
         const renderMathInElement = await import(
             "katex/contrib/auto-render/auto-render"
