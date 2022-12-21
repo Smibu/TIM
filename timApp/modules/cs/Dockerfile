@@ -220,9 +220,9 @@ RUN python3.10 -m pip install pyod && bash -c "${APT_CLEANUP}"
 RUN python3.10 -m pip install pyqula && bash -c "${APT_CLEANUP}"
 
 # sktime
-RUN bash -c "${APT_INSTALL} python3.10-dev && \
+RUN bash -c "${APT_INSTALL} python3.10-dev build-essential && \
     python3.10 -m pip install sktime[all_extras] && \
-    apt-get purge --auto-remove -y python3.10-dev && \
+    apt-get purge --auto-remove -y python3.10-dev build-essential && \
     ${APT_CLEANUP}"
 
 # R packages
