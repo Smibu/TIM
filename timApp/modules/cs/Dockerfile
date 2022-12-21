@@ -220,7 +220,7 @@ RUN python3.10 -m pip install pyod && bash -c "${APT_CLEANUP}"
 RUN python3.10 -m pip install pyqula && bash -c "${APT_CLEANUP}"
 
 # sktime
-RUN python3.10 -m pip install sktime && bash -c "${APT_CLEANUP}"
+RUN python3.10 -m pip install sktime[all_extras] && bash -c "${APT_CLEANUP}"
 
 # R packages
 RUN bash -c "${APT_INSTALL} gcc g++ liblapack-dev liblapack3 libopenblas-base libopenblas-dev gfortran && ${APT_CLEANUP}"
