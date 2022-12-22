@@ -91,6 +91,7 @@
                  <span *ngIf="hasUserChanged()"> <tim-loading></tim-loading> </span>
              </div>
                  <div class="flex ab-option-row">
+                     <span class="nowrap">
                             <form (ngSubmit)="savePoints()" class="point-form form-inline">
                                 <label class="inline" *ngIf="showTeacher() || (giveCustomPoints && allowCustomPoints())">
                                     <ng-container i18n>Points:</ng-container><input class="form-control input-xs"
@@ -114,13 +115,16 @@
                                     <i class="glyphicon glyphicon-ok"></i>
                                 </button>
                             </form>
-<!--in ab-option-row span elements have right margin, use div if selecting multiple elements for *ngIf -->
-                            <div *ngIf="selectedAnswer">
-
                             <span class="inline" *ngIf="points !== null && !(showTeacher() || (giveCustomPoints && allowCustomPoints())) && taskInfo?.pointsText">
-                        {{ taskInfo?.pointsText }} {{ points }} <span i18n *ngIf="!taskInfo?.showPoints">(only visible to teachers)</span>
-                    </span>
+                            {{ taskInfo?.pointsText }} {{ points }} <span i18n *ngIf="!taskInfo?.showPoints">(only visible to teachers)</span>
+                            </span>
                             <span *ngIf="taskInfo?.maxPoints && points !== null">/ {{ taskInfo?.maxPoints }}</span>
+                     </span>
+
+<!--in ab-option-row span elements have right margin, use div if selecting multiple elements for *ngIf -->
+                            <ng-container *ngIf="selectedAnswer">
+
+
                             <span i18n *ngIf="!selectedAnswer.valid && points !== null">(invalid)</span>
                             <span *ngIf="!viewctrl.teacherMode && allowCustomPoints()">
                         <label class="checkbox-inline">
@@ -145,7 +149,7 @@
                                         <input type="checkbox" [(ngModel)]="giveCustomPoints"><ng-container i18n>cp</ng-container>
                                     </label>
                                 </span>
-                            </div>
+                            </ng-container>
                             <span *ngIf="showTeacher()">
                                 <label class="checkbox-inline">
                                     <input type="checkbox" (change)="toggleInput()" [(ngModel)]="saveTeacher"><ng-container i18n>Save teacher's fix</ng-container>
