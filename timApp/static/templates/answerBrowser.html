@@ -157,7 +157,7 @@
                                     <input type="checkbox" (change)="toggleInput()" [(ngModel)]="saveTeacher"><ng-container i18n>Save teacher's fix</ng-container>
                                 </label>
                             </span>
-                            <div class="flex" *ngIf="selectedAnswer">
+                            <ng-container *ngIf="selectedAnswer">
                             <span *ngIf="showVelpsCheckBox()">
                             <label class="checkbox-inline" >
                                 <input type="checkbox" [(ngModel)]="review" (ngModelChange)="reviewToggled()"><ng-container i18n>Velps</ng-container>
@@ -178,7 +178,7 @@
                                     class="timButton btn-xs btn-danger">
                                 <i class="glyphicon glyphicon-trash"></i>
                             </button>
-                            </div>
+                            </ng-container>
                         <span *ngIf="selectedAnswerWithUsers">
                         <div class="flex" *ngIf="selectedAnswerWithUsers.users.length > 1">
                             <div>
