@@ -444,7 +444,10 @@ def render_plugin_multi(
                     "automd for non-inner plugins not implemented yet"
                 )  # TODO implement
 
-    if docsettings.plugin_md():
+    if plugin_reg.instance and plugin_output_format == PluginOutputFormat.HTML:
+        return plugin_reg.instance.multihtml_direct_call(plugin_dicts)
+
+    if plugin_output_format == PluginOutputFormat.HTML and docsettings.plugin_md():
         convert_md(
             plugin_dicts,
             options=opts,
@@ -454,16 +457,24 @@ def render_plugin_multi(
             else "latex",
         )
 
-    if plugin_reg.instance and plugin_output_format == PluginOutputFormat.HTML:
-        return plugin_reg.instance.multihtml_direct_call(plugin_dicts)
-
-    return call_plugin_generic(
+    texts = call_plugin_generic(
         plugin,
         "post",
         ("multimd" if plugin_output_format == PluginOutputFormat.MD else "multihtml"),
         data=json.dumps(plugin_dicts, cls=TimJsonEncoder),
         headers={"Content-type": "application/json"},
     ).text
+
+    if plugin_output_format == PluginOutputFormat.MD and docsettings.plugin_md():
+        loads = json.loads(texts)
+        loads = call_dumbo(
+            loads,
+            "/latexkeys",
+            options=opts,
+            data_opts=plugin_dumbo_opts,
+        )
+        texts = json.dumps(loads)
+    return texts
 
 
 def has_auto_md(data: dict, default: bool) -> bool:

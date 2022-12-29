@@ -67,9 +67,13 @@ class TextfieldHtmlModel(
     def get_md(self) -> str:
         if not self.userPrint or not self.state or self.state.c is None:
             return ""
-        if isinstance(self.state.c, str) and not self.state.c.strip():
-            return ""
-        return f"{self.state.c}"
+        if isinstance(self.state.c, str):
+            # return f"IS STRING, {self.state.c.startswith('md:')}, {self.state.c[:5]}"
+            if not self.state.c.strip():
+                return ""
+            if self.state.c.startswith("md:"):
+                return self.state.c
+        return f"**{self.state.c}**"
 
 
 @dataclass
