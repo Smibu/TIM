@@ -444,18 +444,18 @@ def render_plugin_multi(
                     "automd for non-inner plugins not implemented yet"
                 )  # TODO implement
 
-    if plugin_reg.instance and plugin_output_format == PluginOutputFormat.HTML:
-        return plugin_reg.instance.multihtml_direct_call(plugin_dicts)
-
-    if plugin_output_format == PluginOutputFormat.HTML and docsettings.plugin_md():
-        convert_md(
-            plugin_dicts,
-            options=opts,
-            plugin_opts=plugin_dumbo_opts,
-            outtype="md"
-            if plugin_output_format == PluginOutputFormat.HTML
-            else "latex",
-        )
+    if plugin_output_format == PluginOutputFormat.HTML:
+        if docsettings.plugin_md():
+            convert_md(
+                plugin_dicts,
+                options=opts,
+                plugin_opts=plugin_dumbo_opts,
+                outtype="md"
+                if plugin_output_format == PluginOutputFormat.HTML
+                else "latex",
+            )
+        if plugin_reg.instance:
+            return plugin_reg.instance.multihtml_direct_call(plugin_dicts)
 
     texts = call_plugin_generic(
         plugin,
