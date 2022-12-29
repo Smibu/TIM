@@ -333,7 +333,11 @@ export class TextfieldPluginComponent
                 this.resetField();
             } else {
                 try {
-                    this.userword = content.c;
+                    if (this.isPlainText()) {
+                        this.updateMdToHtml(content.c);
+                    } else {
+                        this.userword = content.c;
+                    }
                 } catch (e) {
                     this.userword = "";
                     ok = false;
@@ -351,6 +355,21 @@ export class TextfieldPluginComponent
             this.updateListeners(ChangeType.Saved);
             return {ok: ok, message: message};
         });
+    }
+
+    async updateMdToHtml(md: string) {
+        if (md.startsWith("md:")) {
+            md = md.slice(3);
+        } else {
+            this.userword = md;
+            return;
+        }
+        const r = await this.httpGet<{answer: string}>(`/md`, {
+            input: md,
+        });
+        if (r.ok) {
+            this.userword = r.result.answer;
+        }
     }
 
     /**

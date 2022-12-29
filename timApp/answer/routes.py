@@ -464,6 +464,12 @@ def get_answers_for_tasks(tasks: list[str], user_id: int) -> Response:
         raise RouteException(str(e))
 
 
+@answers.get("/md")
+def get_answer_as_md(input: str) -> Response:
+    answer_html = call_dumbo([input])[0]
+    return json_response({"answer": answer_html})
+
+
 @dataclass
 class JsRunnerMarkupModel(GenericMarkupModel):
     fields: (
