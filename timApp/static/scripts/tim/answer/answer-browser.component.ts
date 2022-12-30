@@ -206,6 +206,7 @@ export class AnswerBrowserComponent
     peerReviewEnabled = false;
     showNewTask = false;
     buttonNewTask = $localize`New task`;
+    pluginType!: string;
 
     constructor(
         private element: ElementRef<HTMLElement>,
@@ -251,6 +252,7 @@ export class AnswerBrowserComponent
         this.loader = this.viewctrl.getPluginLoader(
             this.taskId.docTask().toString()
         )!;
+        this.pluginType = this.loader.pluginType;
         this.formMode = this.loader.isInFormMode() && !this.forceBrowser();
         const markup = this.pluginMarkup();
         if (this.isUseCurrentUser() || this.formMode) {

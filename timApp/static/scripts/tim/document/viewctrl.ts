@@ -1231,15 +1231,18 @@ export class ViewCtrl implements IController {
         formAnswerBrowsers: Map<DocIdDotName, AnswerBrowserComponent>,
         user: IUser
     ) {
+        const taskMap: Record<string, string> = {};
+        for (const [tid, fab] of formAnswerBrowsers.entries()) {
+            taskMap[tid.toString()] = fab.pluginType;
+        }
         const r = await to(
             $http.post<{
                 answers: Record<string, IAnswer | undefined>;
                 userId: number;
             }>("/userAnswersForTasks", {
-                tasks: Array.from(formAnswerBrowsers.keys()).map((task) =>
-                    task.toString()
-                ),
+                tasks: taskMap,
                 user_id: user.id,
+                form_mode: !!this.docSettings.form_mode,
             })
         );
         if (!r.ok) {

@@ -333,9 +333,14 @@ export class TextfieldPluginComponent
                 this.resetField();
             } else {
                 try {
-                    if (this.isPlainText()) {
+                    if (
+                        this.isPlainText() &&
+                        this.vctrl.docSettings.form_mode
+                    ) {
+                        console.log("separate request");
                         this.updateMdToHtml(content.c);
                     } else {
+                        console.log("auto-converted");
                         this.userword = content.c;
                     }
                 } catch (e) {

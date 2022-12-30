@@ -357,6 +357,7 @@ export class PluginLoaderComponent implements AfterViewInit, OnDestroy, OnInit {
     }
 
     async determineAndSetComponent(component: HTMLElement) {
+        console.log("detandsetcomp");
         if (component.nodeType === Node.COMMENT_NODE) {
             // empty loader, do nothing
             return;

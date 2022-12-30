@@ -4,6 +4,7 @@ import re
 from collections import defaultdict
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
+from json import JSONDecodeError
 from typing import Union, Any, Callable, TypedDict
 
 from flask import Response
@@ -103,7 +104,7 @@ from timApp.plugin.plugin import (
 from timApp.plugin.plugin import find_plugin_from_document
 from timApp.plugin.pluginControl import pluginify
 from timApp.plugin.pluginexception import PluginException
-from timApp.plugin.plugintype import PluginTypeBase
+from timApp.plugin.plugintype import PluginTypeBase, CONTENT_FIELD_NAME_MAP
 from timApp.plugin.taskid import TaskId, TaskIdAccess
 from timApp.timdb.exceptions import TimDbException
 from timApp.timdb.sqa import db
@@ -426,7 +427,9 @@ def get_globals_for_tasks(task_ids: list[TaskId], answer_map: dict[str, dict]) -
 
 
 @answers.post("/userAnswersForTasks")
-def get_answers_for_tasks(tasks: list[str], user_id: int) -> Response:
+def get_answers_for_tasks(
+    tasks: dict[str, str], user_id: int, form_mode: bool
+) -> Response:
     """
     Route for getting latest valid answers for given user and list of tasks
 
@@ -441,7 +444,10 @@ def get_answers_for_tasks(tasks: list[str], user_id: int) -> Response:
         doc_map = {}
         tids = []
         gtids = []
-        for task_id in tasks:
+        for task_id, ptype in tasks.items():
+            if ptype.startswith("/"):
+                ptype = ptype[1:]
+            print(ptype)
             tid = TaskId.parse(task_id)
             if tid.doc_id is None:
                 raise RouteException(f"Task ID {task_id} is missing document ID.")
@@ -459,6 +465,30 @@ def get_answers_for_tasks(tasks: list[str], user_id: int) -> Response:
             get_useranswers_for_task(user, tids, answer_map)
         if gtids:
             get_globals_for_tasks(gtids, answer_map)
+        if not form_mode:
+            loaded_contents = [
+                json.loads(c.get("content")) for c in answer_map.values()
+            ]
+            for ans in answer_map.values():
+                try:
+                    loaded_content = json.loads(ans.get("content"))
+                except JSONDecodeError:
+                    loaded_content = ""
+                loaded_contents.append(loaded_content)
+            loaded_contents = call_dumbo(loaded_contents, path="/mdkeys")
+            for idx, ans in enumerate(answer_map.values()):
+                ans["content"] = json.dumps(loaded_contents[idx])
+        # for taskid, answer in answer_map.items():
+        #     content = json.loads(answer.get("content"))
+        #     ptype = tasks.get(taskid)
+        #     if not ptype:
+        #         continue
+        #     if ptype.startswith("/"):
+        #         ptype = ptype[1:]
+        #     field = CONTENT_FIELD_NAME_MAP.get(ptype)
+        #     if not field:
+        #         continue
+        #     print(field)
         return json_response({"answers": answer_map, "userId": user_id})
     except Exception as e:
         raise RouteException(str(e))
